@@ -427,32 +427,6 @@ body {
   transition: all 0.15s;
 }
 .playlist-dl:hover { background: #E6F1FB; }
-.tts-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  margin-bottom: 12px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #E6F1FB;
-  color: #185FA5;
-  border: 1px solid #185FA5;
-}
-.tts-status.speaking { background: #EAF3DE; color: #3B6D11; border-color: #3B6D11; }
-.tts-status.error { background: #FCEBEB; color: #A32D2D; border-color: #A32D2D; }
-.tts-stop-btn {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: 1.5px solid currentColor;
-  background: transparent;
-  color: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  margin-left: auto;
-}
 
 /* ---- AI TUTOR ---- */
 .info-banner {
@@ -670,7 +644,7 @@ body {
         </div>
       </div>
       <div class="player-card">
-        <div id="ttsStatus" class="tts-status" style="display:none;"></div>
+        <audio id="audioPlayer" preload="metadata"></audio>
         <div class="now-playing" id="nowPlaying">NOW PLAYING &mdash; Domain 1</div>
         <div class="episode-title" id="episodeTitle">1.1 &mdash; Overview of IS Auditing &amp; CISA Exam Structure</div>
         <div class="player-controls">
@@ -684,19 +658,15 @@ body {
         <div class="time-row">
           <span id="curTime">0:00</span>
           <span><button class="speed-btn" id="speedBtn" onclick="cycleSpeed()">1x</button></span>
-          <span id="totalTime">37:55</span>
+          <span id="totalTime">0:00</span>
         </div>
       </div>
       <div class="card">
         <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Playlist</h3>
         <div id="playlist"></div>
         <div class="btn-row">
-          <button class="btn btn-primary" onclick="readEpisodeAloud()">&#128266; Read Aloud (TTS)</button>
-          <button class="btn" onclick="stopTTS()">&#9724; Stop TTS</button>
           <button class="btn" onclick="downloadCurrentEpisode()">&#11015; Download Script</button>
-          <button class="btn" onclick="downloadAllEpisodes()">&#128230; Download All Scripts</button>
-        </div>
-        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn" onclick="downloadCurrentAudio()">&#11015; Download MP3</button>
           <button class="btn btn-primary" onclick="generatePodcastEpisode()">Generate podcast episode &#8599;</button>
           <button class="btn" onclick="generateFullSeries()">Generate full series &#8599;</button>
         </div>
@@ -1136,8 +1106,11 @@ function resetFocusBalanced() {
 }
 
 /* ============================================================
-   AUDIOBOOK
+   AUDIOBOOK — Real HTML5 Audio Player
    ============================================================ */
+const audioEl = document.getElementById('audioPlayer');
+let scrubbing = false;
+
 function getSortedPlaylist() {
   const p = getActiveProfile();
   const eps = EPISODES.map((e, idx) => ({ ...e, idx, focusLevel: p.focus[e.domain - 1] }));
@@ -1145,9 +1118,21 @@ function getSortedPlaylist() {
   return eps;
 }
 
+function getAudioURL(epNum) {
+  const AUDIO_FILES = {
+    '1.1':'audio/ep1_1_overview_auditing.mp3','1.2':'audio/ep1_2_audit_planning.mp3','1.3':'audio/ep1_3_evidence_sampling.mp3',
+    '2.1':'audio/ep2_1_governance_frameworks.mp3','2.2':'audio/ep2_2_risk_compliance.mp3',
+    '3.1':'audio/ep3_1_sdlc.mp3','3.2':'audio/ep3_2_change_management.mp3','3.3':'audio/ep3_3_project_management.mp3',
+    '4.1':'audio/ep4_1_service_management.mp3','4.2':'audio/ep4_2_bcp_dr.mp3','4.3':'audio/ep4_3_database_network.mp3',
+    '5.1':'audio/ep5_1_security_frameworks.mp3','5.2':'audio/ep5_2_access_control.mp3','5.3':'audio/ep5_3_cryptography_pki.mp3',
+    '5.4':'audio/ep5_4_network_security.mp3','5.5':'audio/ep5_5_incident_response.mp3'
+  };
+  const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+  return base + AUDIO_FILES[epNum];
+}
+
 function renderPlaylist() {
   const sorted = getSortedPlaylist();
-  const p = getActiveProfile();
   document.getElementById('playlist').innerHTML = sorted.map((ep, si) => {
     const fl = ep.focusLevel;
     const active = si === currentEpisode;
@@ -1166,11 +1151,22 @@ function renderPlaylist() {
 
 function selectEpisode(idx) {
   currentEpisode = idx;
-  playbackPos = 0;
+  const sorted = getSortedPlaylist();
+  const ep = sorted[idx];
+  audioEl.src = getAudioURL(ep.num);
+  audioEl.load();
   isPlaying = false;
-  clearInterval(playInterval);
   renderPlaylist();
   updatePlayerUI();
+}
+
+function loadCurrentAudio() {
+  const sorted = getSortedPlaylist();
+  const ep = sorted[currentEpisode];
+  if (!audioEl.src || !audioEl.src.includes(ep.num.replace('.','_'))) {
+    audioEl.src = getAudioURL(ep.num);
+    audioEl.load();
+  }
 }
 
 function updateNowPlaying() {
@@ -1179,53 +1175,61 @@ function updateNowPlaying() {
   const ep = sorted[currentEpisode] || sorted[0];
   document.getElementById('nowPlaying').innerHTML = 'NOW PLAYING &mdash; Domain ' + ep.domain;
   document.getElementById('episodeTitle').innerHTML = ep.num + ' &mdash; ' + ep.title;
-  document.getElementById('totalTime').textContent = ep.dur;
-  updatePlayerUI();
+  loadCurrentAudio();
 }
 
 function updatePlayerUI() {
-  const sorted = getSortedPlaylist();
-  const ep = sorted[currentEpisode] || sorted[0];
   document.getElementById('playBtn').innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9654;';
-  document.getElementById('curTime').textContent = fmtTime(playbackPos);
-  const pct = ep.secs > 0 ? (playbackPos / ep.secs) * 1000 : 0;
-  document.getElementById('scrubBar').value = Math.min(pct, 1000);
-}
-
-function togglePlay() {
-  if (!isPlaying) {
-    readEpisodeAloud();
-  } else {
-    stopTTS();
+  document.getElementById('curTime').textContent = fmtTime(audioEl.currentTime || 0);
+  document.getElementById('totalTime').textContent = fmtTime(audioEl.duration || 0);
+  if (!scrubbing && audioEl.duration) {
+    document.getElementById('scrubBar').value = (audioEl.currentTime / audioEl.duration) * 1000;
   }
 }
 
-function skipBack() { playbackPos = Math.max(0, playbackPos - 10); updatePlayerUI(); }
-function skipFwd() {
-  const sorted = getSortedPlaylist();
-  const ep = sorted[currentEpisode];
-  playbackPos = Math.min(ep.secs, playbackPos + 10);
-  updatePlayerUI();
+function togglePlay() {
+  loadCurrentAudio();
+  if (audioEl.paused) {
+    audioEl.play().then(() => { isPlaying = true; updatePlayerUI(); }).catch(() => {
+      showToast('Audio file not found — deploy audio/ folder alongside the app');
+    });
+  } else {
+    audioEl.pause();
+    isPlaying = false;
+    updatePlayerUI();
+  }
 }
 
+function skipBack() { audioEl.currentTime = Math.max(0, audioEl.currentTime - 10); updatePlayerUI(); }
+function skipFwd() { audioEl.currentTime = Math.min(audioEl.duration || 0, audioEl.currentTime + 10); updatePlayerUI(); }
+
 function prevTrack() {
-  if (currentEpisode > 0) { currentEpisode--; playbackPos = 0; renderPlaylist(); updatePlayerUI(); }
+  if (currentEpisode > 0) { selectEpisode(currentEpisode - 1); }
 }
 function nextTrack() {
   const sorted = getSortedPlaylist();
-  if (currentEpisode < sorted.length - 1) { currentEpisode++; playbackPos = 0; renderPlaylist(); updatePlayerUI(); }
-  else { isPlaying = false; clearInterval(playInterval); playbackPos = 0; updatePlayerUI(); }
+  if (currentEpisode < sorted.length - 1) { selectEpisode(currentEpisode + 1); }
 }
 
 function scrub(val) {
-  const sorted = getSortedPlaylist();
-  const ep = sorted[currentEpisode];
-  playbackPos = (val / 1000) * ep.secs;
+  if (audioEl.duration) {
+    audioEl.currentTime = (val / 1000) * audioEl.duration;
+  }
   updatePlayerUI();
 }
 
+document.getElementById('scrubBar').addEventListener('mousedown', () => { scrubbing = true; });
+document.getElementById('scrubBar').addEventListener('mouseup', () => { scrubbing = false; });
+document.getElementById('scrubBar').addEventListener('touchstart', () => { scrubbing = true; });
+document.getElementById('scrubBar').addEventListener('touchend', () => { scrubbing = false; });
+
+audioEl.addEventListener('timeupdate', updatePlayerUI);
+audioEl.addEventListener('ended', () => { isPlaying = false; nextTrack(); });
+audioEl.addEventListener('loadedmetadata', updatePlayerUI);
+
 function cycleSpeed() {
   speedIdx = (speedIdx + 1) % SPEEDS.length;
+  audioEl.playbackRate = SPEEDS[speedIdx];
   document.getElementById('speedBtn').textContent = SPEEDS[speedIdx] + 'x';
 }
 
@@ -1270,7 +1274,7 @@ Domain 5: 5.1 Information Security Frameworks, 5.2 Access Control & IAM, 5.3 Cry
 }
 
 /* ============================================================
-   PODCAST FILE MAP & TTS
+   PODCAST FILE MAP & DOWNLOADS
    ============================================================ */
 const EPISODE_FILES = {
   '1.1': 'podcasts/domain1_ep1_overview_auditing.md',
@@ -1291,132 +1295,28 @@ const EPISODE_FILES = {
   '5.5': 'podcasts/domain5_ep5_incident_response.md'
 };
 
-let ttsUtterance = null;
-let ttsText = '';
-
 function getBaseURL() {
   const loc = window.location;
   return loc.href.substring(0, loc.href.lastIndexOf('/') + 1);
 }
 
-function getCurrentEpisodeFile() {
-  const sorted = getSortedPlaylist();
-  const ep = sorted[currentEpisode];
-  return EPISODE_FILES[ep.num];
-}
-
-async function fetchEpisodeText(epNum) {
-  const file = EPISODE_FILES[epNum];
-  if (!file) return null;
+async function downloadFile(url, filename) {
   try {
-    const base = getBaseURL();
-    const resp = await fetch(base + file);
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    let text = await resp.text();
-    // Strip markdown formatting for TTS
-    text = text.replace(/^#+\s*/gm, '');
-    text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
-    text = text.replace(/\*([^*]+)\*/g, '$1');
-    text = text.replace(/\[SECTION BREAK\]/gi, '. ');
-    text = text.replace(/---/g, '');
-    text = text.replace(/```[\s\S]*?```/g, '');
-    text = text.replace(/\|[^\n]+\|/g, '');
-    text = text.replace(/^-{3,}$/gm, '');
-    return text;
+    const blob = await resp.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+    showToast('Downloaded ' + filename);
   } catch (e) {
-    return null;
+    showToast('Download failed — file must be deployed alongside the app');
   }
-}
-
-function showTTSStatus(msg, type) {
-  const el = document.getElementById('ttsStatus');
-  el.style.display = 'flex';
-  el.className = 'tts-status' + (type ? ' ' + type : '');
-  el.innerHTML = msg;
-}
-
-function hideTTSStatus() {
-  document.getElementById('ttsStatus').style.display = 'none';
-}
-
-async function readEpisodeAloud() {
-  if (!('speechSynthesis' in window)) {
-    showTTSStatus('Text-to-Speech is not supported in this browser. Try Chrome or Edge.', 'error');
-    return;
-  }
-  stopTTS();
-  const sorted = getSortedPlaylist();
-  const ep = sorted[currentEpisode];
-  showTTSStatus('Loading episode ' + ep.num + '...', '');
-
-  const text = await fetchEpisodeText(ep.num);
-  if (!text) {
-    showTTSStatus('Could not load podcast script. Make sure the podcasts/ folder is deployed alongside the app. <button class="tts-stop-btn" onclick="hideTTSStatus()">Dismiss</button>', 'error');
-    return;
-  }
-
-  ttsText = text;
-  // Split into chunks (browsers limit utterance length)
-  const chunks = [];
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  let chunk = '';
-  for (const s of sentences) {
-    if ((chunk + s).length > 800) {
-      if (chunk) chunks.push(chunk);
-      chunk = s;
-    } else {
-      chunk += s;
-    }
-  }
-  if (chunk) chunks.push(chunk);
-
-  isPlaying = true;
-  updatePlayerUI();
-  let chunkIdx = 0;
-
-  function speakNext() {
-    if (chunkIdx >= chunks.length) {
-      showTTSStatus('Finished reading episode ' + ep.num + ' <button class="tts-stop-btn" onclick="hideTTSStatus()">Dismiss</button>', '');
-      isPlaying = false;
-      updatePlayerUI();
-      return;
-    }
-    ttsUtterance = new SpeechSynthesisUtterance(chunks[chunkIdx]);
-    ttsUtterance.rate = SPEEDS[speedIdx];
-    ttsUtterance.pitch = 1;
-    // Try to use a natural voice
-    const voices = speechSynthesis.getVoices();
-    const preferred = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en')) ||
-                      voices.find(v => v.lang.startsWith('en-US')) ||
-                      voices.find(v => v.lang.startsWith('en'));
-    if (preferred) ttsUtterance.voice = preferred;
-
-    ttsUtterance.onend = () => { chunkIdx++; speakNext(); };
-    ttsUtterance.onerror = (e) => {
-      if (e.error !== 'canceled') {
-        showTTSStatus('TTS error: ' + e.error + ' <button class="tts-stop-btn" onclick="hideTTSStatus()">Dismiss</button>', 'error');
-      }
-      isPlaying = false;
-      updatePlayerUI();
-    };
-    showTTSStatus('Speaking episode ' + ep.num + ' (' + (chunkIdx+1) + '/' + chunks.length + ') <button class="tts-stop-btn" onclick="stopTTS()">Stop</button>', 'speaking');
-    speechSynthesis.speak(ttsUtterance);
-  }
-
-  // Ensure voices are loaded
-  if (speechSynthesis.getVoices().length === 0) {
-    speechSynthesis.addEventListener('voiceschanged', () => speakNext(), { once: true });
-  } else {
-    speakNext();
-  }
-}
-
-function stopTTS() {
-  speechSynthesis.cancel();
-  isPlaying = false;
-  clearInterval(playInterval);
-  updatePlayerUI();
-  hideTTSStatus();
 }
 
 async function downloadCurrentEpisode() {
@@ -1424,71 +1324,21 @@ async function downloadCurrentEpisode() {
   const ep = sorted[currentEpisode];
   const file = EPISODE_FILES[ep.num];
   if (!file) { showToast('No script file for this episode'); return; }
-  try {
-    const base = getBaseURL();
-    const resp = await fetch(base + file);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const blob = new Blob([text], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Downloaded ' + file.split('/').pop());
-  } catch (e) {
-    showToast('Download failed — podcast files must be deployed alongside the app');
-  }
+  await downloadFile(getBaseURL() + file, file.split('/').pop());
 }
 
-async function downloadAllEpisodes() {
-  let downloaded = 0;
-  for (const [num, file] of Object.entries(EPISODE_FILES)) {
-    try {
-      const base = getBaseURL();
-      const resp = await fetch(base + file);
-      if (!resp.ok) continue;
-      const text = await resp.text();
-      const blob = new Blob([text], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.split('/').pop();
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      downloaded++;
-      await new Promise(r => setTimeout(r, 300));
-    } catch (e) { /* skip */ }
-  }
-  showToast(downloaded > 0 ? 'Downloaded ' + downloaded + ' episode scripts' : 'Download failed — podcast files not found');
+async function downloadCurrentAudio() {
+  const sorted = getSortedPlaylist();
+  const ep = sorted[currentEpisode];
+  const url = getAudioURL(ep.num);
+  const filename = url.split('/').pop();
+  await downloadFile(url, filename);
 }
 
 async function downloadEpisodeByNum(num) {
   const file = EPISODE_FILES[num];
   if (!file) { showToast('No script file for episode ' + num); return; }
-  try {
-    const base = getBaseURL();
-    const resp = await fetch(base + file);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const blob = new Blob([text], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Downloaded ' + file.split('/').pop());
-  } catch (e) {
-    showToast('Download failed — podcast files must be deployed alongside the app');
-  }
+  await downloadFile(getBaseURL() + file, file.split('/').pop());
 }
 
 /* ============================================================
