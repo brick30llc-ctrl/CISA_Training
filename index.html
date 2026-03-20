@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CISA Mastery Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #FAFAF8;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+/* ---- LOGIN ---- */
+#loginScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #FAFAF8;
+}
+.login-card {
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  border-radius: 12px;
+  padding: 48px 40px 36px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.login-icon { margin-bottom: 20px; }
+.login-icon svg { width: 56px; height: 56px; }
+.login-card h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; }
+.login-card .subtitle { font-size: 14px; color: #5F5E5A; margin-bottom: 28px; line-height: 1.5; }
+.login-input-wrap { position: relative; margin-bottom: 8px; }
+.login-input-wrap input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #d3d1c7;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.login-input-wrap input:focus { border-color: #185FA5; }
+.login-input-wrap input.error { border-color: #A32D2D; }
+.login-error { color: #A32D2D; font-size: 13px; min-height: 20px; margin-bottom: 12px; }
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #185FA5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.login-btn:hover { background: #134d88; }
+.login-footer { margin-top: 24px; font-size: 12px; color: #888780; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+.shake { animation: shake 0.4s ease; }
+
+/* ---- APP SHELL ---- */
+#appShell { display: none; }
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid #e5e4e0;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.profile-switcher {
+  display: flex;
+  gap: 8px;
+  padding: 14px 0 10px;
+  flex-wrap: wrap;
+}
+.profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 8px;
+  border-radius: 20px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+  background: transparent;
+}
+.profile-pill .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.profile-pill.active { box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+.nav-bar {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 0;
+  overflow-x: auto;
+}
+.nav-btn {
+  padding: 10px 18px;
+  border: 1.5px solid #d3d1c7;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  color: #5F5E5A;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  border-bottom: none;
+  position: relative;
+  top: 1px;
+}
+.nav-btn.active {
+  background: #185FA5;
+  color: #fff;
+  border-color: #185FA5;
+}
+.nav-btn:hover:not(.active) { background: #f0efeb; }
+.nav-btn.signout {
+  margin-left: auto;
+  color: #A32D2D;
+  border-color: #f0cece;
+}
+.nav-btn.signout:hover { background: #FCEBEB; }
+
+/* ---- CONTENT ---- */
+.tab-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ---- CARDS ---- */
+.card {
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  margin-bottom: 20px;
+}
+
+/* ---- STAT CARDS ---- */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.stat-card .label { font-size: 12px; color: #888780; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.stat-card .value { font-size: 32px; font-weight: 700; color: #1a1a1a; margin-top: 4px; }
+.stat-card .unit { font-size: 14px; color: #5F5E5A; font-weight: 400; }
+
+/* ---- CHART TABS ---- */
+.chart-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.chart-tab {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1.5px solid #d3d1c7;
+  background: transparent;
+  color: #5F5E5A;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chart-tab.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.chart-wrap { height: 260px; position: relative; }
+
+/* ---- DOMAIN ROWS ---- */
+.domain-rows { margin-top: 24px; }
+.domain-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0efeb;
+}
+.domain-row:last-child { border-bottom: none; }
+.domain-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: #f0efeb;
+}
+.domain-info { flex: 1; min-width: 0; }
+.domain-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.domain-score-text { font-size: 12px; color: #5F5E5A; margin-top: 2px; }
+.focus-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.progress-bar-wrap {
+  width: 120px;
+  height: 8px;
+  background: #f0efeb;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* ---- BUTTONS ---- */
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1.5px solid #d3d1c7;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: #f5f5f3; }
+.btn-primary { background: #185FA5; color: #fff; border-color: #185FA5; }
+.btn-primary:hover { background: #134d88; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+/* ---- FOCUS SETTINGS ---- */
+.focus-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.focus-mode-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1.5px solid #d3d1c7;
+  background: transparent;
+  color: #5F5E5A;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.focus-mode-btn.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0efeb;
+  flex-wrap: wrap;
+}
+.slider-row:last-child { border-bottom: none; }
+.slider-wrap { flex: 1; min-width: 160px; }
+.slider-wrap input[type=range] {
+  width: 100%;
+  accent-color: #185FA5;
+  height: 6px;
+}
+.slider-labels { display: flex; justify-content: space-between; font-size: 10px; color: #888780; margin-top: 2px; }
+.ai-insight {
+  background: #EEEDFE;
+  border-left: 4px solid #534AB7;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1a1a1a;
+}
+
+/* ---- AUDIOBOOK ---- */
+.quality-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.quality-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.quality-item .q-label { color: #5F5E5A; font-weight: 600; }
+.quality-item .q-value { color: #1a1a1a; }
+.quality-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #EAF3DE;
+  color: #3B6D11;
+}
+.player-card {
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  margin-bottom: 20px;
+}
+.now-playing { font-size: 11px; color: #888780; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.episode-title { font-size: 16px; font-weight: 700; margin: 6px 0 16px; color: #1a1a1a; }
+.player-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.player-controls button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid #d3d1c7;
+  background: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.player-controls button:hover { background: #f0efeb; }
+.player-controls .play-btn {
+  width: 52px;
+  height: 52px;
+  background: #185FA5;
+  color: #fff;
+  border-color: #185FA5;
+  font-size: 20px;
+}
+.player-controls .play-btn:hover { background: #134d88; }
+.scrub-bar {
+  width: 100%;
+  accent-color: #185FA5;
+  height: 4px;
+  margin-bottom: 4px;
+}
+.time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #888780;
+  margin-bottom: 10px;
+}
+.speed-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #d3d1c7;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #185FA5;
+}
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+.playlist-item:hover { background: #f5f5f3; }
+.playlist-item.active { background: #E6F1FB; border-color: #185FA5; }
+.playlist-num { font-size: 12px; color: #888780; font-weight: 700; width: 24px; text-align: center; flex-shrink: 0; }
+.playlist-info { flex: 1; min-width: 0; }
+.playlist-title { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.playlist-domain { font-size: 11px; color: #5F5E5A; margin-top: 2px; }
+.playlist-dur { font-size: 12px; color: #888780; flex-shrink: 0; }
+
+/* ---- AI TUTOR ---- */
+.info-banner {
+  border-left: 4px solid #534AB7;
+  background: #EEEDFE;
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  color: #1a1a1a;
+}
+.question-card { margin-bottom: 20px; }
+.q-tags { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.q-tag {
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.q-tag.domain { background: #E6F1FB; color: #185FA5; }
+.q-tag.focus { background: #FCEBEB; color: #A32D2D; }
+.q-text { font-size: 14px; font-weight: 700; line-height: 1.5; margin-bottom: 16px; color: #1a1a1a; }
+.answer-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border: 1.5px solid #d3d1c7;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+  color: #1a1a1a;
+}
+.answer-btn:hover:not(:disabled) { background: #f5f5f3; border-color: #185FA5; }
+.answer-btn:disabled { cursor: default; opacity: 1; }
+.answer-btn.correct { background: #EAF3DE; border-color: #3B6D11; color: #3B6D11; font-weight: 700; }
+.answer-btn.incorrect { background: #FCEBEB; border-color: #A32D2D; color: #A32D2D; }
+.feedback-box {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  display: none;
+}
+.feedback-box.correct-fb { background: #EAF3DE; border-left: 4px solid #3B6D11; color: #1a1a1a; }
+.feedback-box.incorrect-fb { background: #FCEBEB; border-left: 4px solid #A32D2D; color: #1a1a1a; }
+
+/* ---- PROFILES/LEADERBOARD ---- */
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e5e4e0;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.leaderboard-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.lb-rank { font-size: 18px; font-weight: 800; color: #888780; width: 28px; text-align: center; }
+.lb-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.lb-info { flex: 1; }
+.lb-name { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+.lb-stats { font-size: 12px; color: #5F5E5A; margin-top: 2px; }
+.lb-avg { font-size: 20px; font-weight: 800; flex-shrink: 0; }
+.top-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+  background: #EAF3DE;
+  color: #3B6D11;
+  margin-left: 8px;
+}
+.profiles-chart-wrap { height: 220px; position: relative; margin-top: 20px; }
+
+/* ---- TOAST ---- */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1a1a1a;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 700px) {
+  .app-header { padding: 0 12px; }
+  .tab-content { padding: 16px 12px 40px; }
+  .nav-bar { gap: 2px; }
+  .nav-btn { padding: 8px 12px; font-size: 12px; }
+  .stats-row { grid-template-columns: 1fr; }
+  .progress-bar-wrap { width: 80px; }
+  .domain-row { flex-wrap: wrap; }
+  .slider-row { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-icon">
+      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="48" height="48" rx="12" fill="#E6F1FB"/>
+        <path d="M28 14c-4.42 0-8 3.58-8 8v6h-2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h20a2 2 0 0 0 2-2V30a2 2 0 0 0-2-2h-2v-6c0-4.42-3.58-8-8-8zm0 4c2.21 0 4 1.79 4 4v6h-8v-6c0-2.21 1.79-4 4-4zm0 16a2 2 0 1 1 0-4 2 2 0 0 1 0 4z" fill="#185FA5"/>
+      </svg>
+    </div>
+    <h1>Welcome back</h1>
+    <p class="subtitle">Enter your team password to access the CISA study platform.</p>
+    <div class="login-input-wrap">
+      <input type="password" id="pwInput" placeholder="Team password" autocomplete="off">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn">Sign in</button>
+    <p class="login-footer">Contact your study group admin if you need access.</p>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="appShell">
+  <header class="app-header">
+    <div class="profile-switcher" id="profileSwitcher"></div>
+    <nav class="nav-bar" id="navBar">
+      <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="nav-btn" data-tab="focus">Focus Settings</button>
+      <button class="nav-btn" data-tab="audiobook">Audiobook</button>
+      <button class="nav-btn" data-tab="tutor">AI Tutor</button>
+      <button class="nav-btn" data-tab="profiles">Profiles</button>
+      <button class="nav-btn signout" id="signOutBtn">Sign out</button>
+    </nav>
+  </header>
+
+  <main class="tab-content">
+    <!-- DASHBOARD -->
+    <div class="tab-panel active" id="tab-dashboard">
+      <div class="stats-row" id="statsRow"></div>
+      <div class="card">
+        <div class="chart-tabs" id="chartTabs">
+          <button class="chart-tab active" data-chart="radar">Skill Radar</button>
+          <button class="chart-tab" data-chart="bars">Domain Scores</button>
+          <button class="chart-tab" data-chart="grouped">Focus vs Score</button>
+        </div>
+        <div class="chart-wrap"><canvas id="mainCanvas"></canvas></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;">Domain Progress</h3>
+        <div class="domain-rows" id="domainRows"></div>
+        <div class="btn-row">
+          <button class="btn" onclick="switchTab('focus')">Adjust focus levels</button>
+          <button class="btn btn-primary" onclick="sendPrompt('Generate a full 50-question CISA mock exam covering all 5 domains. Weight questions by these focus levels: ' + getFocusSummary() + '. Use advanced professional language. For each question provide 4 options (A-D), the correct answer, and a detailed explanation citing ISACA audit standards or relevant frameworks (COBIT 2019, ISO 27001, NIST CSF). Format as a numbered list.')">Full mock exam &#8599;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOCUS SETTINGS -->
+    <div class="tab-panel" id="tab-focus">
+      <div class="card">
+        <div class="focus-mode-toggle">
+          <button class="focus-mode-btn active" data-mode="manual" onclick="setFocusMode('manual')">Manual</button>
+          <button class="focus-mode-btn" data-mode="smart" onclick="setFocusMode('smart')">Smart AI</button>
+        </div>
+        <div id="aiInsight" class="ai-insight" style="display:none;"></div>
+        <p id="focusInstructions" style="font-size:13px;color:#5F5E5A;margin-bottom:16px;">Drag each slider to set focus level (0 = skip, 4 = critical priority)</p>
+        <div id="focusSliders"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveFocus()">Save focus settings</button>
+          <button class="btn" id="applyAiBtn" style="display:none;" onclick="applyAiFocus()">Apply AI recommendation</button>
+          <button class="btn" onclick="resetFocusBalanced()">Reset to balanced</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIOBOOK -->
+    <div class="tab-panel" id="tab-audiobook">
+      <div class="card" style="margin-bottom:20px;">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Quality Settings</h3>
+        <div class="quality-grid">
+          <div class="quality-item"><span class="q-label">Language level:</span><span class="q-value">Advanced professional</span></div>
+          <div class="quality-item"><span class="q-label">Accuracy standard:</span><span class="q-value">CISA exam-verified</span></div>
+          <div class="quality-item"><span class="q-label">Narration style:</span><span class="q-value">Expert practitioner</span></div>
+          <div class="quality-item"><span class="q-label">Content depth:</span><span class="q-value">Comprehensive + examples</span></div>
+          <div class="quality-item"><span class="q-label">Quality:</span><span class="quality-badge">Very high quality</span></div>
+        </div>
+      </div>
+      <div class="player-card">
+        <div class="now-playing" id="nowPlaying">NOW PLAYING &mdash; Domain 1</div>
+        <div class="episode-title" id="episodeTitle">1.1 &mdash; Overview of IS Auditing &amp; CISA Exam Structure</div>
+        <div class="player-controls">
+          <button onclick="prevTrack()" title="Previous">&#9198;</button>
+          <button onclick="skipBack()" title="Back 10s" style="font-size:12px;font-weight:700;">-10</button>
+          <button class="play-btn" id="playBtn" onclick="togglePlay()">&#9654;</button>
+          <button onclick="skipFwd()" title="Forward 10s" style="font-size:12px;font-weight:700;">+10</button>
+          <button onclick="nextTrack()" title="Next">&#9197;</button>
+        </div>
+        <input type="range" class="scrub-bar" id="scrubBar" min="0" max="1000" value="0" oninput="scrub(this.value)">
+        <div class="time-row">
+          <span id="curTime">0:00</span>
+          <span><button class="speed-btn" id="speedBtn" onclick="cycleSpeed()">1x</button></span>
+          <span id="totalTime">37:55</span>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;font-weight:700;margin-bottom:12px;">Playlist</h3>
+        <div id="playlist"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generatePodcastEpisode()">Generate podcast episode &#8599;</button>
+          <button class="btn" onclick="generateFullSeries()">Generate full series &#8599;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI TUTOR -->
+    <div class="tab-panel" id="tab-tutor">
+      <div class="info-banner">
+        <strong>Adaptive tutor &mdash; focus-weighted.</strong> Questions are drawn from your highest-focus domains more frequently. Difficulty adapts to your score trends.
+      </div>
+      <div class="card question-card" id="questionCard"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="sendPrompt('Generate 5 CISA exam scenario-based questions weighted by these focus levels: ' + getFocusSummary() + '. Use advanced professional language. Each question should present a realistic IT audit scenario. Provide 4 options (A-D), the correct answer, and a detailed explanation citing ISACA standards, COBIT 2019, ISO 27001, or NIST frameworks. Include common exam traps and reasoning for why each incorrect option is wrong.')">Start adaptive session &#8599;</button>
+        <button class="btn" onclick="sendPrompt('Provide an expert-level deep explanation of the following CISA concept from the current question context. Include: 1) Detailed concept breakdown with ISACA definitions, 2) Relevant frameworks (COBIT 2019, ISO 27001, NIST CSF, ITIL 4), 3) Memory aids and mnemonics, 4) Common CISA exam traps related to this concept, 5) Real-world enterprise examples, 6) How an IS auditor would evaluate this in practice. Use advanced professional language suitable for senior IT audit practitioners.')">Deep explain &#8599;</button>
+      </div>
+    </div>
+
+    <!-- PROFILES -->
+    <div class="tab-panel" id="tab-profiles">
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;">Leaderboard</h3>
+        <div id="leaderboard"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;">All Profiles Comparison</h3>
+        <div class="profiles-chart-wrap"><canvas id="profilesCanvas"></canvas></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="sendPrompt('Generate a personalized 4-week CISA study plan for ' + getActiveProfile().name + ' based on their domain scores: ' + getActiveProfile().scores.map((s,i) => DOMAINS[i].short + ': ' + s + '%').join(', ') + '. Focus time allocation: Critical domains = 40%, High = 25%, Medium = 20%, Low = 10%, Skip = 5%. Current focus levels: ' + getFocusSummary() + '. Include daily study targets, recommended resources, practice question counts, and weekly milestone assessments. Use advanced professional language.')">Generate study plan &#8599;</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const DOMAINS = [
+  { id: 1, name: 'Information Systems Auditing Process', short: 'Auditing', icon: '&#128269;' },
+  { id: 2, name: 'Governance & Management of IT', short: 'Governance', icon: '&#127963;' },
+  { id: 3, name: 'IS Acquisition, Development & Implementation', short: 'Dev & Acq', icon: '&#128736;' },
+  { id: 4, name: 'IS Operations & Business Resilience', short: 'Operations', icon: '&#9881;' },
+  { id: 5, name: 'Protection of Information Assets', short: 'Protection', icon: '&#128737;' }
+];
+
+const FOCUS_LABELS = ['Skip','Low','Medium','High','Critical'];
+const FOCUS_COLORS = [
+  { bg:'#F1EFE8', text:'#5F5E5A', bar:'#D3D1C7' },
+  { bg:'#EAF3DE', text:'#3B6D11', bar:'#97C459' },
+  { bg:'#FAEEDA', text:'#854F0B', bar:'#EF9F27' },
+  { bg:'#FCEBEB', text:'#A32D2D', bar:'#F09595' },
+  { bg:'#E24B4A', text:'#ffffff', bar:'#E24B4A' }
+];
+
+const PROFILE_COLORS = [
+  { border:'#185FA5', avatarBg:'#E6F1FB', avatarText:'#185FA5' },
+  { border:'#0F6E56', avatarBg:'#E1F5EE', avatarText:'#0F6E56' },
+  { border:'#534AB7', avatarBg:'#EEEDFE', avatarText:'#534AB7' },
+  { border:'#854F0B', avatarBg:'#FAEEDA', avatarText:'#854F0B' },
+  { border:'#993556', avatarBg:'#FBEAF0', avatarText:'#993556' }
+];
+
+const PROFILES = [
+  { name:'User 1', scores:[81,65,70,58,77], questions:148, streak:6, focus:[2,2,2,3,2] },
+  { name:'User 2', scores:[55,72,68,80,60], questions:92, streak:3, focus:[3,2,2,1,3] },
+  { name:'User 3', scores:[90,88,75,82,91], questions:210, streak:12, focus:[1,1,2,1,1] },
+  { name:'User 4', scores:[40,50,45,38,55], questions:44, streak:1, focus:[3,3,3,4,3] },
+  { name:'User 5', scores:[70,68,72,74,69], questions:130, streak:8, focus:[2,2,2,2,2] }
+];
+
+const EPISODES = [
+  { num:'1.1', domain:1, title:'Overview of IS Auditing & CISA Exam Structure', dur:'37:55', secs:2275 },
+  { num:'1.2', domain:1, title:'Audit Planning & Risk Assessment', dur:'42:10', secs:2530 },
+  { num:'1.3', domain:1, title:'Audit Evidence, Sampling & Documentation', dur:'31:22', secs:1882 },
+  { num:'2.1', domain:2, title:'IT Governance Frameworks (COBIT, ITIL)', dur:'45:00', secs:2700 },
+  { num:'2.2', domain:2, title:'IT Risk Management & Compliance', dur:'38:45', secs:2325 },
+  { num:'3.1', domain:3, title:'Systems Development Life Cycle (SDLC)', dur:'41:30', secs:2490 },
+  { num:'3.2', domain:3, title:'Change Management & Quality Assurance', dur:'29:50', secs:1790 },
+  { num:'3.3', domain:3, title:'Project Management for IS', dur:'33:15', secs:1995 },
+  { num:'4.1', domain:4, title:'IT Service Management & Operations', dur:'36:40', secs:2200 },
+  { num:'4.2', domain:4, title:'Business Continuity & Disaster Recovery', dur:'40:22', secs:2422 },
+  { num:'4.3', domain:4, title:'Database & Network Management', dur:'28:55', secs:1735 },
+  { num:'5.1', domain:5, title:'Information Security Frameworks', dur:'44:10', secs:2650 },
+  { num:'5.2', domain:5, title:'Access Control & Identity Management', dur:'39:30', secs:2370 },
+  { num:'5.3', domain:5, title:'Cryptography & PKI', dur:'35:18', secs:2118 },
+  { num:'5.4', domain:5, title:'Network Security & Firewalls', dur:'32:44', secs:1964 },
+  { num:'5.5', domain:5, title:'Incident Response & Forensics', dur:'37:05', secs:2225 }
+];
+
+const QUESTIONS = [
+  { domain:1, q:'An IS auditor discovers that management has not performed a risk assessment prior to implementing a new ERP system. What should the auditor do FIRST?', options:['A. Recommend that the project be halted immediately','B. Document the finding and assess the impact on audit scope','C. Implement a risk assessment framework on management\'s behalf','D. Report the finding directly to the board of directors'], correct:1, feedback:'Correct. The IS auditor\'s first responsibility is to document the finding and evaluate its impact on the current audit engagement. Per ISACA standards, the auditor must assess materiality and adjust audit scope accordingly before escalating. Halting the project or implementing controls exceeds the auditor\'s mandate of independent assessment.' },
+  { domain:1, q:'When evaluating the adequacy of an organization\'s audit trail, which characteristic is MOST important for the IS auditor to verify?', options:['A. Audit trails are encrypted using AES-256','B. Audit trails provide accountability by linking activities to specific users','C. Audit trails are stored on a separate physical server','D. Audit trails are reviewed by management on a weekly basis'], correct:1, feedback:'Correct. The fundamental purpose of an audit trail is accountability - the ability to trace actions to individual users. While encryption, separation, and review frequency are all good practices, they are secondary to the core requirement of establishing individual accountability. This aligns with ISACA\'s definition of audit trail effectiveness.' },
+  { domain:1, q:'Which sampling method should an IS auditor use when the primary objective is to estimate the rate of control deviations in a population?', options:['A. Variable sampling','B. Attribute sampling','C. Stratified sampling','D. Discovery sampling'], correct:1, feedback:'Correct. Attribute sampling is specifically designed to estimate the rate (percentage) of occurrences of a specific characteristic (deviation) in a population. Variable sampling estimates monetary amounts, stratified sampling divides populations into subgroups, and discovery sampling is used when the expected deviation rate is extremely low.' },
+  { domain:2, q:'Which of the following BEST demonstrates effective IT governance?', options:['A. The IT department independently selects and implements new technologies','B. IT strategy is aligned with business objectives through a steering committee','C. The CIO reports directly to the CFO for budget optimization','D. IT governance is delegated entirely to an external consulting firm'], correct:1, feedback:'Correct. Effective IT governance requires strategic alignment between IT and business objectives. An IT steering committee comprising both business and IT leadership ensures this alignment per COBIT 2019 governance principles. Independent IT decision-making, CFO-only reporting, and full outsourcing all undermine the governance principle of stakeholder value delivery.' },
+  { domain:2, q:'According to COBIT 2019, which governance objective addresses the optimization of risk?', options:['A. EDM01 - Ensured Governance Framework Setting and Maintenance','B. EDM03 - Ensured Risk Optimization','C. APO12 - Managed Risk','D. MEA01 - Managed Performance and Conformance Monitoring'], correct:1, feedback:'Correct. EDM03 (Ensured Risk Optimization) is the COBIT 2019 governance objective specifically addressing risk optimization at the governance level. APO12 (Managed Risk) is a management objective, not a governance objective. EDM01 covers the governance framework itself, and MEA01 addresses monitoring. The distinction between governance (EDM) and management (APO/BAI/DSS/MEA) domains is a frequent CISA exam topic.' },
+  { domain:2, q:'An organization\'s IT risk register has not been updated in 18 months. What is the PRIMARY concern for the IS auditor?', options:['A. The organization may be non-compliant with ISO 31000','B. Emerging threats and vulnerabilities may not be addressed in current controls','C. The IT risk manager should be replaced','D. The risk register format may be outdated'], correct:1, feedback:'Correct. The primary concern is that an outdated risk register means emerging threats and vulnerabilities are likely not captured, leaving the organization with inadequate risk response strategies. Risk management is a continuous process per ISO 31000 and COBIT 2019\'s APO12. Compliance, personnel changes, and format are secondary concerns.' },
+  { domain:3, q:'During a review of an SDLC project, an IS auditor finds that user acceptance testing (UAT) was performed by the development team rather than end users. This is MOST concerning because:', options:['A. The development team lacks testing expertise','B. Independent validation of business requirements has not been performed','C. The project timeline will be extended','D. UAT documentation will be incomplete'], correct:1, feedback:'Correct. UAT must be performed by actual end users or business stakeholders to independently validate that the system meets stated business requirements. When developers perform UAT, there is an inherent conflict of interest and the testing does not verify that business needs are met from the user\'s perspective. This violates the separation of duties principle in the SDLC.' },
+  { domain:3, q:'What is the PRIMARY purpose of establishing a change advisory board (CAB) in IT change management?', options:['A. To approve all emergency changes retroactively','B. To assess, prioritize, and authorize changes to minimize disruption','C. To document all changes for regulatory compliance','D. To assign development resources to change requests'], correct:1, feedback:'Correct. Per ITIL 4 change management practices, the CAB\'s primary purpose is to assess, prioritize, and authorize changes to the IT environment while minimizing risk and disruption to services. While the CAB may be involved in emergency change review, documentation, and resource considerations, its core function is change assessment and authorization.' },
+  { domain:3, q:'An IS auditor reviewing a software acquisition finds that the vendor contract does not include a source code escrow agreement. The GREATEST risk is:', options:['A. The organization cannot customize the software','B. Business continuity may be compromised if the vendor ceases operations','C. The vendor may increase licensing fees','D. Integration with existing systems will be difficult'], correct:1, feedback:'Correct. Without a source code escrow agreement, the organization cannot access or maintain the source code if the vendor goes bankrupt, is acquired, or ceases to support the product. This directly threatens business continuity. Source code escrow is a critical risk mitigation control for third-party software dependencies per ISACA best practices.' },
+  { domain:4, q:'Which of the following is the MOST critical element of a business continuity plan (BCP)?', options:['A. A comprehensive list of all IT assets','B. Executive management support and commitment','C. Detailed technical recovery procedures','D. An annual testing schedule'], correct:1, feedback:'Correct. Executive management support and commitment is the most critical element because without it, the BCP will lack funding, authority, organizational priority, and enforceability. While asset inventories, technical procedures, and testing are all essential components, they cannot be effectively developed or maintained without top-level sponsorship. This aligns with ISACA\'s emphasis on governance-level accountability for business continuity.' },
+  { domain:4, q:'An organization has established an RPO of 4 hours and an RTO of 8 hours for its critical financial application. The current backup strategy performs daily full backups at midnight. What is the PRIMARY concern?', options:['A. The RTO cannot be met with daily backups','B. The RPO cannot be met because up to 24 hours of data could be lost','C. Daily backups are too expensive for the organization','D. The backup window may impact system performance'], correct:1, feedback:'Correct. With daily backups at midnight, the maximum potential data loss is nearly 24 hours, which far exceeds the 4-hour RPO requirement. The organization needs more frequent backup mechanisms (such as transaction log shipping, continuous data protection, or incremental backups every 4 hours maximum) to meet its stated RPO. The RTO concern is secondary since restore time depends on infrastructure, not backup frequency.' },
+  { domain:4, q:'During an audit of IT operations, the IS auditor discovers that the same administrator who deploys code to production also approves the change requests. This is an example of:', options:['A. Inadequate change management documentation','B. A violation of segregation of duties','C. Efficient IT operations','D. Acceptable practice for small IT teams'], correct:1, feedback:'Correct. This is a clear violation of segregation of duties (SoD). The person who approves a change should not be the same person who implements it. This control prevents unauthorized or erroneous changes from being deployed without independent review. Even in small IT teams, compensating controls must be implemented when full SoD cannot be achieved. This is a fundamental ISACA control principle.' },
+  { domain:5, q:'When evaluating an organization\'s BCP, an IS auditor\'s PRIMARY focus should be on:', options:['A. Implementing the BCP on behalf of the organization','B. Recommending specific disaster recovery technologies','C. Objectively assessing whether the plan achieves its stated recovery objectives','D. Training employees on BCP procedures'], correct:2, feedback:'Correct. The IS auditor\'s primary mandate within any BCP evaluation is objective assessment - not implementation, not recommendation of operational changes, but rigorous evaluation of whether the plan achieves its formally stated recovery objectives. This aligns with ISACA\'s audit independence principle and the fundamental role of IS auditing as an assurance function.' },
+  { domain:5, q:'Which access control model assigns permissions based on security labels assigned to both subjects and objects?', options:['A. Discretionary Access Control (DAC)','B. Mandatory Access Control (MAC)','C. Role-Based Access Control (RBAC)','D. Attribute-Based Access Control (ABAC)'], correct:1, feedback:'Correct. Mandatory Access Control (MAC) uses security labels (classifications) assigned to both subjects (users) and objects (resources) to enforce access decisions. Access is granted only when the subject\'s clearance level meets or exceeds the object\'s classification. DAC is owner-determined, RBAC is role-based, and ABAC uses multiple attributes. The Bell-LaPadula model is the classic MAC implementation ("no read up, no write down").' },
+  { domain:5, q:'A digital signature provides which of the following security properties?', options:['A. Confidentiality and availability','B. Authentication, integrity, and non-repudiation','C. Confidentiality and integrity only','D. Availability and non-repudiation'], correct:1, feedback:'Correct. A digital signature provides three security properties: authentication (verifies the sender\'s identity via their private key), integrity (any modification to the signed data invalidates the signature), and non-repudiation (the signer cannot deny having signed the document). Digital signatures do NOT provide confidentiality (that requires encryption) or availability. This distinction is a frequently tested concept on the CISA exam.' },
+  { domain:5, q:'In the incident response lifecycle defined by NIST SP 800-61, what is the correct sequence of phases?', options:['A. Detection, Containment, Preparation, Recovery, Eradication, Post-Incident','B. Preparation, Detection & Analysis, Containment, Eradication, Recovery, Post-Incident Activity','C. Preparation, Containment, Detection, Recovery, Eradication, Lessons Learned','D. Detection, Preparation, Eradication, Containment, Recovery, Reporting'], correct:1, feedback:'Correct. The NIST SP 800-61 Rev. 2 incident response lifecycle follows this sequence: Preparation, Detection & Analysis, Containment, Eradication, Recovery, Post-Incident Activity. The mnemonic "Pretty Detectives Catch Every Rabbit Post-haste" helps remember this order. Note that the IS auditor\'s role is to review the incident response process independently, not to conduct the investigation.' },
+  { domain:5, q:'An IS auditor reviewing a PKI implementation should be MOST concerned if:', options:['A. The root CA certificate has a 10-year validity period','B. The private key of the root CA is stored on a general-purpose server connected to the network','C. Certificate revocation lists are published every 24 hours','D. End-entity certificates use RSA 2048-bit keys'], correct:1, feedback:'Correct. Storing the root CA private key on a network-connected general-purpose server is a critical security risk. The root CA private key is the ultimate trust anchor of the entire PKI hierarchy. Compromise of this key would invalidate the entire certificate infrastructure. Best practice requires the root CA to be offline (air-gapped) with its private key stored in a Hardware Security Module (HSM). The other options represent standard, acceptable PKI practices.' },
+  { domain:5, q:'Zero Trust Architecture (ZTA) is BEST characterized by which principle?', options:['A. Trust internal network traffic by default','B. Never trust, always verify - regardless of network location','C. Trust but verify using perimeter firewalls','D. Grant full access after initial authentication'], correct:1, feedback:'Correct. Zero Trust Architecture operates on the fundamental principle of "never trust, always verify" regardless of whether the request originates from inside or outside the network perimeter. This represents a paradigm shift from traditional perimeter-based security. ZTA requires continuous verification of identity, device health, and context for every access request. NIST SP 800-207 provides the definitive framework for ZTA implementation.' }
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let activeProfile = 0;
+let activeTab = 'dashboard';
+let activeChartMode = 'radar';
+let mainChart = null;
+let profilesChart = null;
+let focusMode = 'manual';
+let currentEpisode = 0;
+let isPlaying = false;
+let playbackPos = 0;
+let playInterval = null;
+let speedIdx = 0;
+const SPEEDS = [1, 1.25, 1.5, 2];
+let currentQuestion = 0;
+let answered = false;
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function getActiveProfile() { return PROFILES[activeProfile]; }
+function avg(arr) { return Math.round(arr.reduce((a,b)=>a+b,0)/arr.length); }
+function focusBadgeHTML(level) {
+  const c = FOCUS_COLORS[level];
+  return `<span class="focus-badge" style="background:${c.bg};color:${c.text};">${FOCUS_LABELS[level]}</span>`;
+}
+function getFocusSummary() {
+  const p = getActiveProfile();
+  return DOMAINS.map((d,i) => d.short + ': ' + FOCUS_LABELS[p.focus[i]]).join(', ');
+}
+function fmtTime(s) {
+  s = Math.floor(s);
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return m + ':' + (sec<10?'0':'') + sec;
+}
+
+/* ============================================================
+   SENDPROMPT & TOAST
+   ============================================================ */
+function sendPrompt(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Prompt copied to clipboard \u2014 paste into Claude');
+  }).catch(() => {
+    showToast('Prompt copied to clipboard \u2014 paste into Claude');
+  });
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+document.getElementById('pwInput').addEventListener('keydown', e => { if(e.key==='Enter') attemptLogin(); });
+function attemptLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === 'Team') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'block';
+    renderAll();
+  } else {
+    const inp = document.getElementById('pwInput');
+    inp.classList.add('error','shake');
+    document.getElementById('loginError').textContent = 'Incorrect password. Please try again.';
+    inp.value = '';
+    setTimeout(() => { inp.classList.remove('shake'); }, 400);
+    setTimeout(() => { inp.classList.remove('error'); document.getElementById('loginError').textContent = ''; }, 2500);
+  }
+}
+document.getElementById('signOutBtn').addEventListener('click', () => {
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('pwInput').value = '';
+});
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.nav-btn:not(.signout)').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+tab));
+  if (tab === 'dashboard') renderDashboard();
+  if (tab === 'focus') renderFocus();
+  if (tab === 'audiobook') renderPlaylist();
+  if (tab === 'tutor') renderQuestion();
+  if (tab === 'profiles') renderProfiles();
+}
+document.querySelectorAll('.nav-btn:not(.signout)').forEach(b => {
+  b.addEventListener('click', () => switchTab(b.dataset.tab));
+});
+
+/* ============================================================
+   PROFILE SWITCHER
+   ============================================================ */
+function renderProfileSwitcher() {
+  const el = document.getElementById('profileSwitcher');
+  el.innerHTML = PROFILES.map((p, i) => {
+    const c = PROFILE_COLORS[i];
+    const active = i === activeProfile;
+    return `<button class="profile-pill${active?' active':''}" style="border-color:${active?c.border:'transparent'};" onclick="switchProfile(${i})">
+      <span class="avatar" style="background:${c.avatarBg};color:${c.avatarText};">${p.name.replace('User ','U')}</span>
+      ${p.name}
+    </button>`;
+  }).join('');
+}
+function switchProfile(idx) {
+  activeProfile = idx;
+  renderAll();
+}
+
+/* ============================================================
+   RENDER ALL
+   ============================================================ */
+function renderAll() {
+  renderProfileSwitcher();
+  renderDashboard();
+  renderFocus();
+  renderPlaylist();
+  renderQuestion();
+  renderProfiles();
+}
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const p = getActiveProfile();
+  const avgScore = avg(p.scores);
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="label">Average Score</div><div class="value">${avgScore}<span class="unit">%</span></div></div>
+    <div class="stat-card"><div class="label">Questions Completed</div><div class="value">${p.questions}</div></div>
+    <div class="stat-card"><div class="label">Day Streak</div><div class="value">${p.streak} <span class="unit">days</span></div></div>
+  `;
+  renderChart();
+  renderDomainRows();
+}
+
+function renderDomainRows() {
+  const p = getActiveProfile();
+  document.getElementById('domainRows').innerHTML = DOMAINS.map((d, i) => {
+    const score = p.scores[i];
+    const fl = p.focus[i];
+    const fc = FOCUS_COLORS[fl];
+    return `<div class="domain-row">
+      <div class="domain-icon">${d.icon}</div>
+      <div class="domain-info"><div class="domain-name">${d.name}</div><div class="domain-score-text">${score}%</div></div>
+      ${focusBadgeHTML(fl)}
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${score}%;background:${fc.bar};"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   CHARTS
+   ============================================================ */
+function renderChart() {
+  if (mainChart) { mainChart.destroy(); mainChart = null; }
+  const ctx = document.getElementById('mainCanvas').getContext('2d');
+  const p = getActiveProfile();
+  const labels = DOMAINS.map(d => d.short);
+
+  document.querySelectorAll('.chart-tab').forEach(b => b.classList.toggle('active', b.dataset.chart === activeChartMode));
+
+  if (activeChartMode === 'radar') {
+    mainChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Domain score %',
+          data: p.scores,
+          borderColor: '#185FA5',
+          backgroundColor: 'rgba(24,95,165,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#185FA5',
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          r: { min: 0, max: 100, ticks: { stepSize: 25, color: '#888780', backdropColor: 'transparent' }, grid: { color: 'rgba(136,135,128,0.2)' }, pointLabels: { color: '#5F5E5A', font: { size: 12, weight: '600' } } }
+        },
+        plugins: { legend: { labels: { usePointStyle: true, pointStyle: 'rect', color: '#5F5E5A', font: { size: 12 } } } }
+      }
+    });
+  } else if (activeChartMode === 'bars') {
+    const colors = p.scores.map(s => s >= 80 ? '#3B6D11' : s >= 65 ? '#185FA5' : s >= 50 ? '#854F0B' : '#A32D2D');
+    mainChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Score', data: p.scores, backgroundColor: colors, borderRadius: 4, barPercentage: 0.6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { min: 0, max: 100, ticks: { stepSize: 25, color: '#888780' }, grid: { color: 'rgba(136,135,128,0.1)' } }, x: { ticks: { color: '#5F5E5A', font: { weight: '600' } }, grid: { display: false } } },
+        plugins: {
+          legend: {
+            labels: {
+              generateLabels: function() {
+                return [
+                  { text: '80%+ Excellent', fillStyle: '#3B6D11', strokeStyle: '#3B6D11', lineWidth: 0 },
+                  { text: '65-79% Good', fillStyle: '#185FA5', strokeStyle: '#185FA5', lineWidth: 0 },
+                  { text: '50-64% Fair', fillStyle: '#854F0B', strokeStyle: '#854F0B', lineWidth: 0 },
+                  { text: 'Below 50%', fillStyle: '#A32D2D', strokeStyle: '#A32D2D', lineWidth: 0 }
+                ];
+              },
+              usePointStyle: true, pointStyle: 'rect', color: '#5F5E5A', font: { size: 11 }
+            }
+          }
+        }
+      }
+    });
+  } else {
+    const focusWeights = p.focus.map(f => f * 25);
+    mainChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Score', data: p.scores, backgroundColor: 'rgba(24,95,165,0.7)', borderRadius: 4, barPercentage: 0.5 },
+          { label: 'Focus weight', data: focusWeights, backgroundColor: 'rgba(163,45,45,0.5)', borderRadius: 4, barPercentage: 0.5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { min: 0, max: 100, ticks: { stepSize: 25, color: '#888780' }, grid: { color: 'rgba(136,135,128,0.1)' } }, x: { ticks: { color: '#5F5E5A', font: { weight: '600' } }, grid: { display: false } } },
+        plugins: { legend: { labels: { usePointStyle: true, pointStyle: 'rect', color: '#5F5E5A', font: { size: 12 } } } }
+      }
+    });
+  }
+}
+
+document.querySelectorAll('.chart-tab').forEach(b => {
+  b.addEventListener('click', () => { activeChartMode = b.dataset.chart; renderChart(); });
+});
+
+/* ============================================================
+   FOCUS SETTINGS
+   ============================================================ */
+function renderFocus() {
+  const p = getActiveProfile();
+  const isSmartMode = focusMode === 'smart';
+  document.querySelectorAll('.focus-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === focusMode));
+  document.getElementById('applyAiBtn').style.display = isSmartMode ? 'inline-block' : 'none';
+  document.getElementById('focusInstructions').textContent = isSmartMode
+    ? 'Focus levels are auto-derived from your domain scores. Sliders are locked.'
+    : 'Drag each slider to set focus level (0 = skip, 4 = critical priority)';
+
+  if (isSmartMode) {
+    const aiFocus = p.scores.map(s => s >= 80 ? 1 : s >= 70 ? 2 : s >= 55 ? 3 : 4);
+    const weakest = DOMAINS[p.scores.indexOf(Math.min(...p.scores))].short;
+    const strongest = DOMAINS[p.scores.indexOf(Math.max(...p.scores))].short;
+    document.getElementById('aiInsight').style.display = 'block';
+    document.getElementById('aiInsight').innerHTML = `<strong>AI Analysis:</strong> Your weakest domain is <strong>${weakest}</strong> (${Math.min(...p.scores)}%) and your strongest is <strong>${strongest}</strong> (${Math.max(...p.scores)}%). The AI recommends allocating more study time to lower-scoring domains to maximize exam readiness. Critical-focus domains should receive 40% of study time, High 25%, Medium 20%, Low 10%.`;
+    renderFocusSliders(aiFocus, true);
+  } else {
+    document.getElementById('aiInsight').style.display = 'none';
+    renderFocusSliders(p.focus, false);
+  }
+}
+
+function renderFocusSliders(focusArr, disabled) {
+  const p = getActiveProfile();
+  document.getElementById('focusSliders').innerHTML = DOMAINS.map((d, i) => {
+    const fl = focusArr[i];
+    const fc = FOCUS_COLORS[fl];
+    return `<div class="slider-row">
+      <div class="domain-icon">${d.icon}</div>
+      <div class="domain-info"><div class="domain-name">${d.name}</div><div class="domain-score-text">${p.scores[i]}%</div></div>
+      <span id="focusBadge${i}">${focusBadgeHTML(fl)}</span>
+      <div class="slider-wrap">
+        <input type="range" min="0" max="4" step="1" value="${fl}" ${disabled?'disabled':''} oninput="onSliderChange(${i}, this.value)">
+        <div class="slider-labels"><span>Skip</span><span>Critical</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onSliderChange(domainIdx, val) {
+  val = parseInt(val);
+  getActiveProfile().focus[domainIdx] = val;
+  document.getElementById('focusBadge'+domainIdx).innerHTML = focusBadgeHTML(val);
+}
+
+function setFocusMode(mode) {
+  focusMode = mode;
+  renderFocus();
+}
+
+function saveFocus() {
+  renderDashboard();
+  renderPlaylist();
+  sendPrompt('Focus settings updated for ' + getActiveProfile().name + ': ' + getFocusSummary() + '. Generate 3 study recommendations based on these focus levels, citing relevant CISA domains and ISACA frameworks.');
+}
+
+function applyAiFocus() {
+  const p = getActiveProfile();
+  p.focus = p.scores.map(s => s >= 80 ? 1 : s >= 70 ? 2 : s >= 55 ? 3 : 4);
+  focusMode = 'manual';
+  renderFocus();
+  renderDashboard();
+  renderPlaylist();
+  showToast('AI focus levels applied');
+}
+
+function resetFocusBalanced() {
+  const p = getActiveProfile();
+  p.focus = [2,2,2,2,2];
+  renderFocus();
+  renderDashboard();
+  renderPlaylist();
+  showToast('Focus reset to balanced (Medium)');
+}
+
+/* ============================================================
+   AUDIOBOOK
+   ============================================================ */
+function getSortedPlaylist() {
+  const p = getActiveProfile();
+  const eps = EPISODES.map((e, idx) => ({ ...e, idx, focusLevel: p.focus[e.domain - 1] }));
+  eps.sort((a, b) => b.focusLevel - a.focusLevel || a.idx - b.idx);
+  return eps;
+}
+
+function renderPlaylist() {
+  const sorted = getSortedPlaylist();
+  const p = getActiveProfile();
+  document.getElementById('playlist').innerHTML = sorted.map((ep, si) => {
+    const fl = ep.focusLevel;
+    const active = si === currentEpisode;
+    return `<div class="playlist-item${active?' active':''}" onclick="selectEpisode(${si})">
+      <span class="playlist-num">${ep.num}</span>
+      <div class="playlist-info">
+        <div class="playlist-title">${ep.num} &mdash; ${ep.title}</div>
+        <div class="playlist-domain">Domain ${ep.domain} ${focusBadgeHTML(fl)}</div>
+      </div>
+      <span class="playlist-dur">${ep.dur}</span>
+    </div>`;
+  }).join('');
+  updateNowPlaying();
+}
+
+function selectEpisode(idx) {
+  currentEpisode = idx;
+  playbackPos = 0;
+  isPlaying = false;
+  clearInterval(playInterval);
+  renderPlaylist();
+  updatePlayerUI();
+}
+
+function updateNowPlaying() {
+  const sorted = getSortedPlaylist();
+  if (!sorted.length) return;
+  const ep = sorted[currentEpisode] || sorted[0];
+  document.getElementById('nowPlaying').innerHTML = 'NOW PLAYING &mdash; Domain ' + ep.domain;
+  document.getElementById('episodeTitle').innerHTML = ep.num + ' &mdash; ' + ep.title;
+  document.getElementById('totalTime').textContent = ep.dur;
+  updatePlayerUI();
+}
+
+function updatePlayerUI() {
+  const sorted = getSortedPlaylist();
+  const ep = sorted[currentEpisode] || sorted[0];
+  document.getElementById('playBtn').innerHTML = isPlaying ? '&#9646;&#9646;' : '&#9654;';
+  document.getElementById('curTime').textContent = fmtTime(playbackPos);
+  const pct = ep.secs > 0 ? (playbackPos / ep.secs) * 1000 : 0;
+  document.getElementById('scrubBar').value = Math.min(pct, 1000);
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  if (isPlaying) {
+    playInterval = setInterval(() => {
+      const sorted = getSortedPlaylist();
+      const ep = sorted[currentEpisode];
+      playbackPos += SPEEDS[speedIdx];
+      if (playbackPos >= ep.secs) { nextTrack(); return; }
+      updatePlayerUI();
+    }, 1000);
+  } else {
+    clearInterval(playInterval);
+  }
+  updatePlayerUI();
+}
+
+function skipBack() { playbackPos = Math.max(0, playbackPos - 10); updatePlayerUI(); }
+function skipFwd() {
+  const sorted = getSortedPlaylist();
+  const ep = sorted[currentEpisode];
+  playbackPos = Math.min(ep.secs, playbackPos + 10);
+  updatePlayerUI();
+}
+
+function prevTrack() {
+  if (currentEpisode > 0) { currentEpisode--; playbackPos = 0; renderPlaylist(); updatePlayerUI(); }
+}
+function nextTrack() {
+  const sorted = getSortedPlaylist();
+  if (currentEpisode < sorted.length - 1) { currentEpisode++; playbackPos = 0; renderPlaylist(); updatePlayerUI(); }
+  else { isPlaying = false; clearInterval(playInterval); playbackPos = 0; updatePlayerUI(); }
+}
+
+function scrub(val) {
+  const sorted = getSortedPlaylist();
+  const ep = sorted[currentEpisode];
+  playbackPos = (val / 1000) * ep.secs;
+  updatePlayerUI();
+}
+
+function cycleSpeed() {
+  speedIdx = (speedIdx + 1) % SPEEDS.length;
+  document.getElementById('speedBtn').textContent = SPEEDS[speedIdx] + 'x';
+}
+
+function generatePodcastEpisode() {
+  const p = getActiveProfile();
+  let highestFocus = 0, highestDomain = 0;
+  p.focus.forEach((f, i) => { if (f > highestFocus) { highestFocus = f; highestDomain = i; } });
+  const d = DOMAINS[highestDomain];
+  sendPrompt(`Generate a full, publication-ready CISA audiobook podcast episode script for Domain ${d.id}: "${d.name}" at a very high quality language level. Requirements:
+
+LANGUAGE & TONE: Use advanced, professional language befitting a senior IT audit practitioner or governance executive. Employ precise technical terminology drawn directly from the ISACA CISA Review Manual. Avoid simplistic phrasing — narrate as a subject-matter expert addressing fellow professionals preparing for the CISA examination.
+
+ACCURACY STANDARD: All content must be factually verified against current ISACA CISA exam objectives and the CISA Review Manual (most recent edition). Cite specific frameworks where applicable (COBIT 2019, ISO/IEC 27001, NIST, ITIL 4, ISO 31000). Distinguish clearly between concepts that are frequently confused on the exam.
+
+STRUCTURE:
+- Episode introduction with domain overview and exam weighting (~200 words)
+- Key concept deep-dives with real-world enterprise examples (one per major subtopic)
+- Common exam traps and how to navigate them
+- Mnemonics and structured memory aids for high-density content
+- Practice scenario walkthrough with auditor reasoning explained
+- Episode summary with critical takeaways
+- Transition to next episode
+
+TARGET AUDIENCE: Working IT audit professionals, CISAs-in-training, governance and risk practitioners.`);
+}
+
+function generateFullSeries() {
+  sendPrompt(`Generate publication-ready CISA audiobook podcast scripts for all 16 episodes across all 5 domains. Each episode should be 35-45 minutes of narration content. Follow the same quality requirements:
+
+LANGUAGE & TONE: Advanced professional language for senior IT audit practitioners. Use precise ISACA CISA Review Manual terminology.
+
+ACCURACY: Factually verified against current CISA exam objectives. Cite COBIT 2019, ISO/IEC 27001, NIST CSF, ITIL 4, ISO 31000 where applicable.
+
+STRUCTURE per episode: Introduction with exam weighting, concept deep-dives with examples, exam traps, mnemonics, practice scenarios, summary, transition.
+
+Episodes:
+Domain 1: 1.1 Overview of IS Auditing, 1.2 Audit Planning & Risk Assessment, 1.3 Audit Evidence & Sampling
+Domain 2: 2.1 IT Governance Frameworks, 2.2 IT Risk Management & Compliance
+Domain 3: 3.1 SDLC, 3.2 Change Management & QA, 3.3 Project Management for IS
+Domain 4: 4.1 IT Service Management, 4.2 Business Continuity & DR, 4.3 Database & Network Management
+Domain 5: 5.1 Information Security Frameworks, 5.2 Access Control & IAM, 5.3 Cryptography & PKI, 5.4 Network Security & Firewalls, 5.5 Incident Response & Forensics`);
+}
+
+/* ============================================================
+   AI TUTOR
+   ============================================================ */
+function getWeightedQuestions() {
+  const p = getActiveProfile();
+  const weighted = [];
+  QUESTIONS.forEach(q => {
+    const fl = p.focus[q.domain - 1];
+    const weight = fl === 4 ? 5 : fl === 3 ? 4 : fl === 2 ? 3 : fl === 1 ? 2 : 1;
+    for (let i = 0; i < weight; i++) weighted.push(q);
+  });
+  // Shuffle
+  for (let i = weighted.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [weighted[i], weighted[j]] = [weighted[j], weighted[i]];
+  }
+  return weighted;
+}
+
+let questionPool = [];
+
+function renderQuestion() {
+  if (!questionPool.length || currentQuestion >= questionPool.length) {
+    questionPool = getWeightedQuestions();
+    currentQuestion = 0;
+  }
+  answered = false;
+  const q = questionPool[currentQuestion];
+  const p = getActiveProfile();
+  const fl = p.focus[q.domain - 1];
+  const d = DOMAINS[q.domain - 1];
+
+  document.getElementById('questionCard').innerHTML = `
+    <div class="q-tags">
+      <span class="q-tag domain">Domain ${q.domain}: ${d.short}</span>
+      <span class="q-tag focus" style="background:${FOCUS_COLORS[fl].bg};color:${FOCUS_COLORS[fl].text};">${FOCUS_LABELS[fl]} focus</span>
+    </div>
+    <div class="q-text">${q.q}</div>
+    <div id="answersWrap">
+      ${q.options.map((opt, oi) => `<button class="answer-btn" onclick="answerQuestion(${oi})">${opt}</button>`).join('')}
+    </div>
+    <div class="feedback-box" id="feedbackBox"></div>
+    <div id="nextBtnWrap" style="margin-top:12px;display:none;">
+      <button class="btn btn-primary" onclick="nextQuestion()">Next question</button>
+    </div>
+  `;
+}
+
+function answerQuestion(selected) {
+  if (answered) return;
+  answered = true;
+  const q = questionPool[currentQuestion];
+  const btns = document.querySelectorAll('#answersWrap .answer-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    if (i === selected && i !== q.correct) btn.classList.add('incorrect');
+  });
+  const fb = document.getElementById('feedbackBox');
+  const isCorrect = selected === q.correct;
+  fb.className = 'feedback-box ' + (isCorrect ? 'correct-fb' : 'incorrect-fb');
+  fb.style.display = 'block';
+  fb.innerHTML = `<strong>${isCorrect ? 'Correct!' : 'Incorrect.'}</strong> ${q.feedback}`;
+  document.getElementById('nextBtnWrap').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  renderQuestion();
+}
+
+/* ============================================================
+   PROFILES TAB
+   ============================================================ */
+function renderProfiles() {
+  // Leaderboard
+  const ranked = PROFILES.map((p, i) => ({ ...p, idx: i, avg: avg(p.scores) }));
+  ranked.sort((a, b) => b.avg - a.avg);
+  document.getElementById('leaderboard').innerHTML = ranked.map((p, rank) => {
+    const c = PROFILE_COLORS[p.idx];
+    return `<div class="leaderboard-item" style="border-left:4px solid ${c.border};" onclick="switchProfile(${p.idx})">
+      <div class="lb-rank">${rank + 1}</div>
+      <div class="lb-avatar" style="background:${c.avatarBg};color:${c.avatarText};">${p.name.replace('User ','U')}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.name}${rank === 0 ? '<span class="top-badge">Top</span>' : ''}</div>
+        <div class="lb-stats">${p.questions} questions &middot; ${p.streak} day streak</div>
+      </div>
+      <div class="lb-avg" style="color:${c.border};">${p.avg}%</div>
+    </div>`;
+  }).join('');
+
+  // Radar chart
+  if (profilesChart) { profilesChart.destroy(); profilesChart = null; }
+  const ctx = document.getElementById('profilesCanvas').getContext('2d');
+  const labels = DOMAINS.map(d => d.short);
+  const datasets = PROFILES.map((p, i) => {
+    const c = PROFILE_COLORS[i];
+    return {
+      label: p.name + ' (' + avg(p.scores) + '%)',
+      data: p.scores,
+      borderColor: c.border,
+      backgroundColor: 'rgba(0,0,0,0)',
+      borderWidth: 2,
+      pointBackgroundColor: c.border,
+      pointRadius: 3
+    };
+  });
+  profilesChart = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        r: { min: 0, max: 100, ticks: { stepSize: 25, color: '#888780', backdropColor: 'transparent' }, grid: { color: 'rgba(136,135,128,0.2)' }, pointLabels: { color: '#5F5E5A', font: { size: 12, weight: '600' } } }
+      },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', color: '#5F5E5A', font: { size: 11 }, padding: 16 } } }
+    }
+  });
+}
+
+</script>
+</body>
+</html>
